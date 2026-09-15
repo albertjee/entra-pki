@@ -15,7 +15,7 @@ No Azure subscription, no App Service, no portal clicks.
 The [EntraCBA Field Console](https://github.com/albertjee/entra-cba) issues a self-signed
 root CA and leaf certificate per engagement, then configures the tenant's
 `certificateBasedAuthConfiguration` to trust that root. Entra fetches the CRL from the
-`crlDistributionPoint` URL baked into the trust config — **this repository, published
+`certificateRevocationListUrl` set in that trust config — **this repository, published
 via GitHub Pages, is that URL**.
 
 The console pushes each DER CRL here with `git` and `gh` credentials; Entra fetches it
@@ -25,10 +25,12 @@ repo exists to prevent.
 
 ## Layout
 
-    cba.crl                     # root-level CRL (perClient=false mode)
+    cba.crl                     # creation-time placeholder (perClient=false mode; see note)
     Contoso-Labs/cba.crl        # per-client CRL (default perClient mode)
     <CLIENT_NAME>/cba.crl       # one folder per engagement, created on first publish
 
+- The root-level `cba.crl` is a creation-time placeholder and is **not** served to any
+  tenant; live tenants always fetch `…/<CLIENT_NAME>/cba.crl`.
 - `CLIENT_NAME` is validated as `[A-Za-z0-9_.-]+` by the publisher before it becomes a
   folder or URL segment.
 - CRLs are DER-encoded, signed by the per-client root CA, and re-published with an
@@ -56,11 +58,11 @@ publish; its Verify phase re-fetches this URL and reports `crl: PASS/FAIL`.
 ## Security
 
 This repository holds **public material only** — CRLs and optionally CA certificates.
-Nothing here is sensitive by design; private keys and PFX bundles live in the console's
-DPAPI-protected store, never in git. GitHub Pages satisfies Entra's two hard
-requirements for a CRL URL: HTTPS and anonymous reachability. Note that revocation
-checking only works while this site stays published — taking it down breaks
-revocation for leaves under these CAs.
+Nothing here is sensitive by design; client folder names are visible by design.
+Private keys and PFX bundles live in the console's DPAPI-protected store, never in git.
+GitHub Pages satisfies Entra's two hard requirements for a CRL URL: HTTPS and
+anonymous reachability. Note that revocation checking only works while this site stays
+published — taking it down breaks revocation for leaves under these CAs.
 
 ## Related
 
